@@ -1,10 +1,8 @@
 package com.example.usrgam.codigobarras;
 import android.Manifest;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.hardware.Camera;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -12,9 +10,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.text.Editable;
 import android.util.Log;
-import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -32,36 +28,32 @@ import java.util.Locale;
 
 import me.dm7.barcodescanner.zxing.ZXingScannerView;
 
-public class MainActivity extends AppCompatActivity implements ZXingScannerView.ResultHandler {
+public class ScanBreak extends AppCompatActivity implements ZXingScannerView.ResultHandler {
 
 
     private static final int REQUESTCAMERA = 1;
     private ZXingScannerView scannerView;
     private static int camID= Camera.CameraInfo.CAMERA_FACING_BACK;
-  //  EditText Edirrecion;
-  //  String dirrecion;
+    //  EditText Edirrecion;
+    //  String dirrecion;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.break_activity);
         SimpleDateFormat tiempo = new SimpleDateFormat("EEE, MMM d, yyyy", Locale.getDefault());
         SimpleDateFormat estado = new SimpleDateFormat("a", Locale.getDefault());
         Date date = new Date();
 
         String fecha = tiempo.format(date);
         String apm = estado.format(date);
-        // verificar permiso
-      //  Edirrecion = (EditText) findViewById(R.id.editText);
-      //  dirrecion =Edirrecion.getText()+"";
-      //  dirrecion ="192.168.1.2";
-      //  Toast.makeText(getApplicationContext(),dirrecion,Toast.LENGTH_LONG).show();
+
         scannerView = new ZXingScannerView(this);
         setContentView(scannerView);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             // control de permisos
             if (verificarPermisos()) {
                 //mensaje
-                Toast.makeText(getApplicationContext(), "permiso otorgado", Toast.LENGTH_LONG).show();
+                Toast.makeText(getApplicationContext(), "Scan break", Toast.LENGTH_LONG).show();
             } else {
                 solicitarpermisos();
             }
@@ -135,29 +127,24 @@ public class MainActivity extends AppCompatActivity implements ZXingScannerView.
 
     @Override
     public void handleResult(Result result) {
-       // AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
-        if(result.getText() != null) {
-          //  AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
-            // alertDialog.setMessage("mensaje cualquiera");
-            onPause();
-            registrarAsistencia(result.getText()+"");
-      /*   Intent intents = new Intent(getApplicationContext(),Registro.class);
-            intents.putExtra("loging", result.getText()+"");
-            startActivity(intents);
-*/
-            //alertDialog.setMessage(result.getText());
-            //alertDialog.show();
-            //alertDialog.setMessage(result.getBarcodeFormat().toString());
 
+        if(result.getText() != null) {
+
+            onPause();
+            SimpleDateFormat tiempo = new SimpleDateFormat("EEE, MMM d, yyyy", Locale.getDefault());
+            SimpleDateFormat estado = new SimpleDateFormat("a", Locale.getDefault());
+            Date date = new Date();
+
+            String fecha = tiempo.format(date);
+            String apm = estado.format(date);
+            registrarAsistencia(result.getText()+"",fecha,apm);
             Log.e("resultadoBAR:", result.getBarcodeFormat().toString());
 
 
         }
-       // onResume();
     }
 
-    public void registrarAsistencia(final String asistencia){
-      //  final  AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
+    public void registrarAsistencia(final String asistencia, final String fecha, final String tiempo){
         Response.Listener<String> responseListener = new Response.Listener<String>() {
             @Override
             public void onResponse(String response) {
@@ -167,44 +154,43 @@ public class MainActivity extends AppCompatActivity implements ZXingScannerView.
 
                     boolean success = jsonResponse.getBoolean("success");
                     if (success) {
-                     AlertDialog.Builder alertDialog = new AlertDialog.Builder(MainActivity.this,R.style.AlertDialogRed);
+                        AlertDialog.Builder alertDialog = new AlertDialog.Builder(ScanBreak.this,R.style.AlertDialogRed);
                         alertDialog.setMessage("Usuario Repetido");
-                      //  alertDialog.setIcon(R.drawable.ic_launcher_background);
+
                         alertDialog.show();
-                        Toast toast = Toast.makeText(MainActivity.this, "Usuario Repetido", Toast.LENGTH_SHORT);
+                        Toast toast = Toast.makeText(ScanBreak.this, "Usuario Repetido", Toast.LENGTH_SHORT);
                         TextView v = (TextView) toast.getView().findViewById(android.R.id.message);
                         v.setTextColor(Color.RED);
                         toast.show();
-                      onResume();
+                        onResume();
 
                     } else {
 
-                       registro(asistencia);
-                     // alertDialog.setMessage("REgistrando...");
-                       AlertDialog.Builder alertDialog = new AlertDialog.Builder(MainActivity.this,R.style.AlertDialogGreen);
-                       alertDialog.setMessage("Te has registrado correctamente :)");
+                        registro(asistencia,fecha,tiempo);
+                  /*      AlertDialog.Builder alertDialog = new AlertDialog.Builder(ScanBreak.this,R.style.AlertDialogGreen);
+                        alertDialog.setMessage("Te has registrado correctamente :)");
                         alertDialog.show();
-                        Toast toast = Toast.makeText(MainActivity.this,"Te has registrado correctamente :)",Toast.LENGTH_LONG);
+                        Toast toast = Toast.makeText(ScanBreak.this,"Te has registrado correctamente :)",Toast.LENGTH_LONG);
                         TextView v = (TextView) toast.getView().findViewById(android.R.id.message);
                         v.setTextColor(Color.GREEN);
                         toast.show();
-                       onResume();
+                        onResume();*/
                     }
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
             }
         };
-
-        AsistenciaRequest asistenciaRequest = new AsistenciaRequest(asistencia, responseListener);
-        RequestQueue requestQueue = Volley.newRequestQueue(MainActivity.this);
-        requestQueue.add(asistenciaRequest);
+        BreakSelectRequest breakSelectRequest = new BreakSelectRequest(fecha, tiempo,asistencia,responseListener);
+        RequestQueue requestQueue = Volley.newRequestQueue(ScanBreak.this);
+        requestQueue.add(breakSelectRequest);
 
     }
 
 
 
-    public void registro(final String asistencia){
+    public void registro(final String asistencia,String fecha, String tiempo){
+
         Response.Listener<String> responseListener = new Response.Listener<String>() {
             @Override
             public void onResponse(String response) {
@@ -214,20 +200,17 @@ public class MainActivity extends AppCompatActivity implements ZXingScannerView.
 
                     boolean success = jsonResponse.getBoolean("success");
                     if (success) {
-                    /*   alertDialog.setMessage("Te has registrado correctamente :)");
+                        AlertDialog.Builder alertDialog = new AlertDialog.Builder(ScanBreak.this,R.style.AlertDialogGreen);
+                        alertDialog.setMessage("Te has registrado correctamente :)");
                         alertDialog.show();
-                        Toast toast = Toast.makeText(MainActivity.this,"Te has registrado correctamente :)",Toast.LENGTH_LONG);
+                        Toast toast = Toast.makeText(ScanBreak.this,"Te has registrado correctamente :)",Toast.LENGTH_LONG);
                         TextView v = (TextView) toast.getView().findViewById(android.R.id.message);
                         v.setTextColor(Color.GREEN);
-                        toast.show();*/
+                        toast.show();
+                        onResume();
 
                     } else {
-                    /*    alertDialog.setMessage("Error con el registro");
-                        alertDialog.show();
-                        Toast toast = Toast.makeText(MainActivity.this,"Error con el registro",Toast.LENGTH_LONG);
-                        TextView v = (TextView) toast.getView().findViewById(android.R.id.message);
-                        v.setTextColor(Color.GREEN);
-                        toast.show();*/
+
 
                     }
                 } catch (JSONException e) {
@@ -236,9 +219,9 @@ public class MainActivity extends AppCompatActivity implements ZXingScannerView.
             }
         };
 
-        RegistroRequest registroRequest = new RegistroRequest(asistencia, responseListener);
-        RequestQueue requestQueue = Volley.newRequestQueue(MainActivity.this);
-        requestQueue.add(registroRequest);
+        BreakInsertRequest breakInsertRequest = new BreakInsertRequest(fecha,tiempo,asistencia,responseListener);
+        RequestQueue requestQueue = Volley.newRequestQueue(ScanBreak.this);
+        requestQueue.add(breakInsertRequest);
 
     }
 }
